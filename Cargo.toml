@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Miles Steele <miles@milessteele.com>"]
 
 [dependencies]
+pam-auth = "0.4.0"
