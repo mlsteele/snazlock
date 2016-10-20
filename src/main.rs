@@ -1,108 +1,88 @@
 extern crate pam_auth;
 extern crate rpassword;
 extern crate users;
-extern crate xcb;
+extern crate piston;
+extern crate graphics;
+extern crate glutin_window;
+extern crate opengl_graphics;
+
+use piston::window::WindowSettings;
+use piston::event_loop::*;
+use piston::input::*;
+use glutin_window::GlutinWindow as Window;
+use opengl_graphics::{ GlGraphics, OpenGL };
 
 const PAM_APP_NAME: &'static str = "snazlock";
 
 pub fn main() {
     try_graphics();
+    try_auth();
+}
+
+pub struct App {
+    gl: GlGraphics, // OpenGL drawing backend.
+    rotation: f64   // Rotation for the square.
+}
+
+impl App {
+    fn render(&mut self, args: &RenderArgs) {
+        use graphics::*;
+
+        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+        const RED:   [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+
+        let square = rectangle::square(0.0, 0.0, 50.0);
+        let rotation = self.rotation;
+        let (x, y) = ((args.width / 2) as f64,
+                      (args.height / 2) as f64);
+
+        self.gl.draw(args.viewport(), |c, gl| {
+            // Clear the screen.
+            clear(GREEN, gl);
+
+            let transform = c.transform.trans(x, y)
+                                       .rot_rad(rotation)
+                                       .trans(-25.0, -25.0);
+
+            // Draw a box rotating around the middle of the screen.
+            rectangle(RED, square, transform, gl);
+        });
+    }
+
+    fn update(&mut self, args: &UpdateArgs) {
+        // Rotate 2 radians per second.
+        self.rotation += 2.0 * args.dt;
+    }
 }
 
 fn try_graphics() {
-    let points: &[xcb::Point] = &[
-        xcb::Point::new(10, 10),
-        xcb::Point::new(10, 20),
-        xcb::Point::new(20, 10),
-        xcb::Point::new(20, 20),
-    ];
-    let polyline: &[xcb::Point] = &[
-        xcb::Point::new(50, 10 ),
-        xcb::Point::new( 5, 20 ),     /* rest of points are relative */
-        xcb::Point::new(25, -20),
-        xcb::Point::new(10, 10 )
-    ];
-    let segments: &[xcb::Segment] = &[
-        xcb::Segment::new(100, 10, 140, 30),
-        xcb::Segment::new(110, 25, 130, 60)
-    ];
-    let rectangles: &[xcb::Rectangle] = &[
-        xcb::Rectangle::new(10, 50, 40, 20),
-        xcb::Rectangle::new(80, 50, 10, 40)
-    ];
-    let arcs: &[xcb::Arc] = &[
-        xcb::Arc::new(10, 100, 60, 40, 0, 90 << 6),
-        xcb::Arc::new(90, 100, 55, 40, 0, 270 << 6)
-    ];
+    // Change this to OpenGL::V2_1 if not working.
+    let opengl = OpenGL::V3_2;
 
+    // Create an Glutin window.
+    let mut window: Window = WindowSettings::new(
+            "spinning-square",
+            [200, 200]
+        )
+        .opengl(opengl)
+        .exit_on_esc(true)
+        .build()
+        .unwrap();
 
-    let (conn, screen_num) = xcb::Connection::connect(None).unwrap();
-    let setup = conn.get_setup();
-    let screen = setup.roots().nth(screen_num as usize).unwrap();
+    // Create a new game and run it.
+    let mut app = App {
+        gl: GlGraphics::new(opengl),
+        rotation: 0.0
+    };
 
-    let foreground = conn.generate_id();
+    let mut events = window.events();
+    while let Some(e) = events.next(&mut window) {
+        if let Some(r) = e.render_args() {
+            app.render(&r);
+        }
 
-    xcb::create_gc(&conn, foreground, screen.root(), &[
-            (xcb::GC_FOREGROUND, screen.black_pixel()),
-            (xcb::GC_GRAPHICS_EXPOSURES, 0),
-    ]);
-
-    let win = conn.generate_id();
-    xcb::create_window(&conn,
-        xcb::COPY_FROM_PARENT as u8,
-        win,
-        screen.root(),
-        0, 0,
-        150, 150,
-        10,
-        xcb::WINDOW_CLASS_INPUT_OUTPUT as u16,
-        screen.root_visual(), &[
-            (xcb::CW_BACK_PIXEL, screen.white_pixel()),
-            (xcb::CW_EVENT_MASK,
-             xcb::EVENT_MASK_EXPOSURE | xcb::EVENT_MASK_KEY_PRESS),
-        ]
-    );
-    xcb::map_window(&conn, win);
-    conn.flush();
-
-
-    loop {
-        let event = conn.wait_for_event();
-        match event {
-            None => { break; }
-            Some(event) => {
-                let r = event.response_type() & !0x80;
-                match r {
-                    xcb::EXPOSE => {
-                        /* We draw the points */
-                        xcb::poly_point(&conn, xcb::COORD_MODE_ORIGIN as u8, win,
-                            foreground, &points);
-
-                        /* We draw the polygonal line */
-                        xcb::poly_line(&conn, xcb::COORD_MODE_PREVIOUS as u8, win,
-                            foreground, &polyline);
-
-                        /* We draw the segements */
-                        xcb::poly_segment(&conn, win, foreground, &segments);
-
-                        /* We draw the rectangles */
-                        xcb::poly_rectangle(&conn, win, foreground, &rectangles);
-
-                        /* We draw the arcs */
-                        xcb::poly_arc(&conn, win, foreground, &arcs);
-
-                        /* We flush the request */
-                        conn.flush();
-
-                    },
-                    xcb::KEY_PRESS => {
-                        let key_press : &xcb::KeyPressEvent = xcb::cast_event(&event);
-                        println!("Key '{}' pressed", key_press.detail());
-                        break;
-                    },
-                    _ => {}
-                }
-            }
+        if let Some(u) = e.update_args() {
+            app.update(&u);
         }
     }
 }
