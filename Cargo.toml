@@ -5,3 +5,5 @@ authors = ["Miles Steele <miles@milessteele.com>"]
 
 [dependencies]
 pam-auth = "0.4.0"
+rpassword = "0.3.0"
+users = "0.5.2"
