@@ -16,6 +16,7 @@ const PAM_APP_NAME: &'static str = "snazlock";
 
 pub fn main() {
     try_graphics();
+    std::process::exit(0);
     try_auth();
 }
 
@@ -64,6 +65,7 @@ fn try_graphics() {
             "spinning-square",
             [200, 200]
         )
+        .fullscreen(false)
         .opengl(opengl)
         .exit_on_esc(true)
         .build()
@@ -77,13 +79,17 @@ fn try_graphics() {
 
     let mut events = window.events();
     while let Some(e) = events.next(&mut window) {
-        if let Some(r) = e.render_args() {
-            app.render(&r);
-        }
+        e.render(|r| app.render(&r));
 
-        if let Some(u) = e.update_args() {
-            app.update(&u);
-        }
+        e.update(|u| app.update(u));
+
+        e.text(|s| {
+            println!("'{}'", s);
+        });
+
+        e.press(|b| {
+            println!("{:?}", b);
+        });
     }
 }
 
