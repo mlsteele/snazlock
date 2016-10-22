@@ -2,7 +2,7 @@
 name = "snazlock"
 version = "0.1.0"
 dependencies = [
- "glutin 0.6.2",
+ "glutin 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pam-auth 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston 0.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -249,29 +249,7 @@ dependencies = [
 name = "glutin"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "android_glue 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cgl 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "cocoa 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "core-foundation 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "core-graphics 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "dwmapi-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gdi32-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gl_generator 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "objc 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "osmesa-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "shared_library 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "shell32-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "user32-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "wayland-client 0.5.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "wayland-kbd 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "wayland-window 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "x11-dl 2.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
+replace = "glutin 0.6.2"
 
 [[package]]
 name = "image"
