@@ -4,6 +4,7 @@ extern crate users;
 extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
+extern crate glutin;
 extern crate opengl_graphics;
 
 use piston::window::WindowSettings;
@@ -11,6 +12,7 @@ use piston::event_loop::*;
 use piston::input::*;
 use piston::window::{Window,AdvancedWindow};
 use glutin_window::GlutinWindow;
+use glutin::CursorState;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
 const PAM_APP_NAME: &'static str = "snazlock";
@@ -93,7 +95,8 @@ fn try_graphics() {
         .build()
         .unwrap();
 
-    window.set_capture_cursor(true);
+    // window.set_capture_cursor(true);
+    window.window.set_cursor_state(CursorState::SuperGrab);
 
     // Create a new game and run it.
     let mut app = App::new(opengl);
