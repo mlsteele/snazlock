@@ -20,8 +20,6 @@ const GRAPHICS_APP_NAME: &'static str = "snazlock";
 
 pub fn main() {
     try_graphics();
-    std::process::exit(0);
-    try_auth();
 }
 
 pub struct App {
@@ -88,9 +86,9 @@ fn try_graphics() {
             GRAPHICS_APP_NAME,
             [200, 200]
         )
-        .fullscreen(false)
         .opengl(opengl)
         .samples(8)
+        .fullscreen(false)
         .exit_on_esc(true)
         .build()
         .unwrap();
@@ -138,6 +136,8 @@ fn try_graphics() {
             }
         });
 
+        // I don't know of any cases which this helps,
+        // but it probably can't hurt.
         window.set_should_close(false);
 
         if !stayin {
@@ -149,7 +149,8 @@ fn try_graphics() {
     println!("left the event loop");
 }
 
-fn try_auth() {
+#[allow(dead_code)]
+fn auth_pam_example() {
     let username = users::get_user_by_uid(users::get_current_uid()).unwrap().name().to_owned();
     println!("Hello, {}!", username);
 
