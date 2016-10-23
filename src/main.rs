@@ -20,7 +20,7 @@ const GRAPHICS_APP_NAME: &'static str = "snazlock";
 
 pub fn main() {
     // try_graphics();
-    pam_hammer_example();
+    pam_authenticate_example();
 }
 
 pub struct App {
@@ -150,46 +150,36 @@ fn try_graphics() {
     println!("left the event loop");
 }
 
-pub struct PamHammer<'a> {
-    username: String,
-    password: String,
-    authenticator: pam_auth::Authenticator<'a>,
-}
-
-impl<'a> PamHammer<'a> {
-    pub fn new(app_name: &'static str) -> Result<PamHammer<'a>, String> {
-        let user = users::get_user_by_uid(users::get_current_uid());
-        let user = try!(user.ok_or("error getting username"));
-        let mut authenticator = pam_auth::Authenticator::new(app_name);
-        let mut authenticator = try!(authenticator.ok_or("error making authenticator"));
-        Ok(PamHammer{
-            username: user.name().to_owned(),
-            password: String::new(),
-            authenticator: authenticator,
-        })
-    }
-
-    pub fn authenticate(&'a mut self, password: &str) -> bool {
-        self.password = password.to_owned();
-        self.authenticator.set_credentials(&self.username, &self.password);
-        self.authenticator.authenticate().is_ok() && self.authenticator.open_session().is_ok()
-    }
+// Authenticate using a username and password.
+// If username is not supplied, it is assumed to be the current uid user.
+// Returns Ok(true) if successfully authenticated.
+fn pam_authenticate(app_name: &'static str, username: Option<&str>, password: &str) -> Result<bool, String> {
+    let username = match username {
+        Some(username) => username.to_owned(),
+        None => {
+            let user = users::get_user_by_uid(users::get_current_uid());
+            let user = try!(user.ok_or("error getting username"));
+            user.name().to_owned()
+        },
+    };
+    let mut authenticator = pam_auth::Authenticator::new(app_name);
+    let mut authenticator = try!(authenticator.ok_or("error making authenticator"));
+    authenticator.set_credentials(&username, &password);
+    Ok(authenticator.authenticate().is_ok() && authenticator.open_session().is_ok())
 }
 
 #[allow(dead_code)]
-fn pam_hammer_example() {
-    let ph = PamHammer::new(PAM_APP_NAME).unwrap();
-    println!("Hello, {}!", ph.username);
+fn pam_authenticate_example() {
+    println!("Hello!");
 
     println!("password me up >");
     let password = rpassword::read_password().unwrap();
     println!("got it.");
 
-    let authed: bool = ph.authenticate(&password);
+    let authed: bool = pam_authenticate(PAM_APP_NAME, None, &password).unwrap_or(false);
     if authed {
         println!("Successfully opened a session!");
-    }
-    else {
+    } else {
         println!("Authentication failed =/");
     }
 }
