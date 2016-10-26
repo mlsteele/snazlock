@@ -159,21 +159,40 @@ impl App {
                 border: None,
                 resolution: 14,
             };
+
+            #[derive(Copy, Clone)]
+            struct TendrilPoint {
+                ellipse: ellipse::Ellipse,
+                transform: graphics::math::Matrix2d,
+                z: i32,
+            }
+
+            let mut plan: Vec<TendrilPoint> = Vec::new();
+
             // Draw tendrils
             for &t in tendrils.iter() {
                 let mut t1 = c.transform
                     .trans(cx, cy)
                     .rot_rad(t.start_angle);
                 let mut dot = dot;
-                for _ in 1..30 {
+                for z in 1..30 {
                     dot.color = color_brightness(&dot.color, 1.01);
                     let t2 = t1.zoom(30.0);
-                    dot.draw(unit, &Default::default(), t2, gl);
+                    plan.push(TendrilPoint{
+                        ellipse: dot,
+                        transform: t2,
+                        z: z,
+                    });
                     t1 = t1
                         .trans(23.0, 0.0)
                         .rot_deg(t.curl.val())
                         .zoom(0.96);
                 }
+            }
+
+            plan.sort_by_key(|x| x.z);
+            for tp in &plan {
+                tp.ellipse.draw(unit, &Default::default(), tp.transform, gl);
             }
         });
     }
