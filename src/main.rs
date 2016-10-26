@@ -33,10 +33,15 @@ struct Tendril {
     curl: Smooth<f64>,
 }
 
+impl Tendril {
+    fn curl(&mut self, delta: f64) {
+        let x = self.curl.target() + delta;
+        self.curl.set(x);
+    }
+}
+
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    rotation: f64,   // Rotation for the square.
-    size: f64,   // Size for the square.
     tendrils: Vec<Tendril>,
 }
 
@@ -62,17 +67,15 @@ impl App {
         // Create a new game and run it.
         let mut app = App{
             gl: GlGraphics::new(opengl),
-            rotation: 0.0,
-            size: 1.0,
             tendrils: Vec::new(),
         };
 
-        let ntendrils = 30;
+        let ntendrils = 23;
         for i in 0..ntendrils {
             let j = i as f64;
             app.tendrils.push(Tendril{
                 start_angle: j * deg_to_rad(360.0 / (ntendrils as f64)),
-                curl: Smooth::new(0.0),
+                curl: Smooth::new((rand::thread_rng().next_f64() - 0.5) * 2.0),
             });
         }
 
@@ -101,6 +104,7 @@ impl App {
                         let p_len = passphrase.chars().count();
                         let take_n = if p_len > 0 { p_len - 1} else { 0 };
                         passphrase = passphrase.chars().take(take_n).collect();
+                        app.reset_tendrils()
                     },
                     Button::Keyboard(Key::Escape) => {
                         // TODO put this behind --unsafe duh.
@@ -131,10 +135,7 @@ impl App {
         const BLUE1: [f32; 4] = [0.76953125, 0.81640625, 0.91796875, 1.0];
         const BLUE2: [f32; 4] = [0.5703125, 0.68359375, 0.83984375, 1.0];
 
-        let size = self.size * 50.0;
-        let square = rectangle::square(0.0, 0.0, size);
         let unit = rectangle::square(0.0, 0.0, 1.0);
-        let rotation = self.rotation;
         let (x, y) = ((args.width / 2) as f64,
                       (args.height / 2) as f64);
 
@@ -142,14 +143,6 @@ impl App {
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
             clear(BLUE1, gl);
-
-            let transform = c.transform
-                .trans(x, y)
-                .rot_rad(rotation)
-                .trans(-size / 2.0, -size / 2.0);
-
-            // Draw a box rotating around the middle of the screen.
-            rectangle(BLUE2, square, transform, gl);
 
             // Draw tendrils
             for &t in tendrils.iter() {
@@ -170,28 +163,35 @@ impl App {
     }
 
     fn update(&mut self, args: &UpdateArgs) {
-        self.rotation += 0.5 * args.dt;
-        let scaledown: f64 = 0.2;
-        self.size *= scaledown.powf(args.dt as f64);
-        self.size = self.size.max(1.0).min(7.0);
-
         for t in &mut self.tendrils {
             t.curl.tick();
         }
     }
 
     fn kick(&mut self) {
-        self.rotation -= 0.1;
-        self.size *= 1.2;
+        let n_affect: usize = rand::thread_rng().gen_range(1, 4);
+        for _ in 0..n_affect {
+            let i: usize = rand::thread_rng().gen_range(0, self.tendrils.len());
+            let t: &mut Tendril = &mut self.tendrils[i];
+            Self::tweak(t,deg_to_rad(150.0), deg_to_rad(600.0));
+        }
         for t in &mut self.tendrils {
-            if rand::thread_rng().gen() {
-                let mut delta = deg_to_rad(220.0);
-                if rand::thread_rng().gen() {
-                    delta *= -1.0;
-                }
-                let x = t.curl.val() + delta;
-                t.curl.set(x);
-            }
+            Self::tweak(t,deg_to_rad(0.0), deg_to_rad(80.0));
+        }
+    }
+
+    fn tweak(t: &mut Tendril, min: f64, max: f64) {
+        let mut delta = rand::thread_rng().gen_range(min, max);
+        if rand::thread_rng().gen() {
+            delta *= -1.0;
+        }
+        let x = t.curl.target() + delta;
+        t.curl.set(x);
+    }
+
+    fn reset_tendrils(&mut self) {
+        for t in &mut self.tendrils {
+            t.curl.set((rand::thread_rng().next_f64() - 0.5) * 2.0);
         }
     }
 }
@@ -273,10 +273,14 @@ impl Smooth<f64> {
     }
 
     pub fn tick(&mut self) {
-        self.current = self.current + (0.03 * (self.target - self.current));
+        self.current = self.current + (0.08 * (self.target - self.current));
     }
 
     pub fn val(&self) -> f64 {
         self.current
+    }
+
+    pub fn target(&self) -> f64 {
+        self.target
     }
 }
