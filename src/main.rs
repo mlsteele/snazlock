@@ -19,6 +19,7 @@ use glutin::CursorState;
 use opengl_graphics::{ GlGraphics, OpenGL };
 use rand::Rng;
 use num::traits::Float;
+use graphics::types::Color;
 
 const PAM_APP_NAME: &'static str = "snazlock";
 const GRAPHICS_APP_NAME: &'static str = "snazlock";
@@ -38,6 +39,14 @@ impl Tendril {
         let x = self.curl.target() + delta;
         self.curl.set(x);
     }
+}
+
+fn color_brightness(x: &Color, delta: f32) -> Color {
+    let r = x[0] * delta;
+    let g = x[1] * delta;
+    let b = x[2] * delta;
+    let a = x[3];
+    [r, g, b, a]
 }
 
 pub struct App {
@@ -143,7 +152,7 @@ impl App {
         let tendrils = self.tendrils.clone();
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
-            clear(BLUE1, gl);
+            clear(color_brightness(&BLUE1, 0.2), gl);
 
             let dot = ellipse::Ellipse{
                 color: BLUE2,
@@ -155,7 +164,9 @@ impl App {
                 let mut t1 = c.transform
                     .trans(cx, cy)
                     .rot_rad(t.start_angle);
+                let mut dot = dot;
                 for _ in 1..30 {
+                    dot.color = color_brightness(&dot.color, 1.01);
                     let t2 = t1.zoom(30.0);
                     dot.draw(unit, &Default::default(), t2, gl);
                     t1 = t1
