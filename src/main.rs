@@ -13,7 +13,7 @@ use std::vec::Vec;
 use piston::window::WindowSettings;
 use piston::event_loop::*;
 use piston::input::*;
-use piston::window::{Window,AdvancedWindow};
+use piston::window::{Window};
 use glutin_window::GlutinWindow;
 use glutin::CursorState;
 use opengl_graphics::{ GlGraphics, OpenGL };
@@ -56,13 +56,13 @@ impl App {
             )
             .opengl(opengl)
             .samples(8)
-            .fullscreen(false)
+            .fullscreen(true)
             .exit_on_esc(true)
             .build()
             .unwrap();
 
         // window.set_capture_cursor(true);
-        window.window.set_cursor_state(CursorState::SuperGrab);
+        window.window.set_cursor_state(CursorState::SuperGrab).unwrap();
 
         // Create a new game and run it.
         let mut app = App{
@@ -82,7 +82,6 @@ impl App {
         let mut passphrase = String::new();
 
         let mut events = window.events();
-        let mut stayin = true;
         while let Some(e) = events.next(&mut window) {
             e.render(|r| app.render(&r));
 
@@ -97,6 +96,7 @@ impl App {
                             }
                         }
                         passphrase.truncate(0);
+                        app.reset_tendrils();
                         println!("RET");
                     },
                     Button::Keyboard(Key::Backspace) => {
@@ -104,7 +104,6 @@ impl App {
                         let p_len = passphrase.chars().count();
                         let take_n = if p_len > 0 { p_len - 1} else { 0 };
                         passphrase = passphrase.chars().take(take_n).collect();
-                        app.reset_tendrils()
                     },
                     Button::Keyboard(Key::Escape) => {
                         // TODO put this behind --unsafe duh.
@@ -130,39 +129,44 @@ impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
-        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-        const RED:   [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+        #[allow(unused_variables,dead_code)]
+        const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
         const BLUE1: [f32; 4] = [0.76953125, 0.81640625, 0.91796875, 1.0];
         const BLUE2: [f32; 4] = [0.5703125, 0.68359375, 0.83984375, 1.0];
 
-        let unit = rectangle::square(0.0, 0.0, 1.0);
-        let (x, y) = ((args.width / 2) as f64,
-                      (args.height / 2) as f64);
+        let (cx, cy) = ((args.width / 2) as f64,
+                        (args.height / 2) as f64);
+
+        let unit = rectangle::centered(rectangle::square(0.0, 0.0, 1.0));
 
         let tendrils = self.tendrils.clone();
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
             clear(BLUE1, gl);
 
+            let dot = ellipse::Ellipse{
+                color: BLUE2,
+                border: None,
+                resolution: 16,
+            };
             // Draw tendrils
             for &t in tendrils.iter() {
-                // let el = ellipse::Ellipse::new(BLUE2);
-                let mut transform = c.transform
-                    .trans(x, y)
+                let mut t1 = c.transform
+                    .trans(cx, cy)
                     .rot_rad(t.start_angle);
                 for _ in 1..20 {
-                    transform = transform
-                        .trans(20.0, 0.0)
+                    let t2 = t1.zoom(12.0);
+                    dot.draw(unit, &Default::default(), t2, gl);
+                    t1 = t1
+                        .trans(40.0, 0.0)
                         .rot_deg(t.curl.val())
                         .zoom(0.96);
-                    let sq = rectangle::square(0.0, 0.0, 30.0);
-                    ellipse(BLUE2, sq, transform, gl);
                 }
             }
         });
     }
 
-    fn update(&mut self, args: &UpdateArgs) {
+    fn update(&mut self, _: &UpdateArgs) {
         for t in &mut self.tendrils {
             t.curl.tick();
         }
@@ -185,8 +189,7 @@ impl App {
         if rand::thread_rng().gen() {
             delta *= -1.0;
         }
-        let x = t.curl.target() + delta;
-        t.curl.set(x);
+        t.curl(delta);
     }
 
     fn reset_tendrils(&mut self) {
@@ -208,7 +211,7 @@ fn pam_authenticate(app_name: &'static str, username: Option<&str>, password: &s
             user.name().to_owned()
         },
     };
-    let mut authenticator = pam_auth::Authenticator::new(app_name);
+    let authenticator = pam_auth::Authenticator::new(app_name);
     let mut authenticator = try!(authenticator.ok_or("error making authenticator"));
     authenticator.set_credentials(&username, &password);
     Ok(authenticator.authenticate().is_ok() && authenticator.open_session().is_ok())
