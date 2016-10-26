@@ -104,6 +104,7 @@ impl App {
                         let p_len = passphrase.chars().count();
                         let take_n = if p_len > 0 { p_len - 1} else { 0 };
                         passphrase = passphrase.chars().take(take_n).collect();
+                        app.kick();
                     },
                     Button::Keyboard(Key::Escape) => {
                         // TODO put this behind --unsafe duh.
@@ -147,18 +148,18 @@ impl App {
             let dot = ellipse::Ellipse{
                 color: BLUE2,
                 border: None,
-                resolution: 16,
+                resolution: 14,
             };
             // Draw tendrils
             for &t in tendrils.iter() {
                 let mut t1 = c.transform
                     .trans(cx, cy)
                     .rot_rad(t.start_angle);
-                for _ in 1..20 {
-                    let t2 = t1.zoom(12.0);
+                for _ in 1..30 {
+                    let t2 = t1.zoom(30.0);
                     dot.draw(unit, &Default::default(), t2, gl);
                     t1 = t1
-                        .trans(40.0, 0.0)
+                        .trans(23.0, 0.0)
                         .rot_deg(t.curl.val())
                         .zoom(0.96);
                 }
