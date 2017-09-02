@@ -106,10 +106,10 @@ impl App {
                         }
                         passphrase.truncate(0);
                         app.reset_tendrils();
-                        println!("RET");
+                        println!("key: return");
                     },
                     Button::Keyboard(Key::Backspace) => {
-                        println!("DEL");
+                        println!("key: backspace");
                         let p_len = passphrase.chars().count();
                         let take_n = if p_len > 0 { p_len - 1} else { 0 };
                         passphrase = passphrase.chars().take(take_n).collect();
@@ -117,6 +117,7 @@ impl App {
                     },
                     Button::Keyboard(Key::Escape) => {
                         // TODO put this behind --unsafe duh.
+                        println!("key: esc");
                         window.set_should_close(true);
                     },
                     _ => {},
